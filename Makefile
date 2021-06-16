@@ -56,7 +56,7 @@ CONFIG_IPS_MODE = default
 CONFIG_LPS_MODE = default
 CONFIG_USB_AUTOSUSPEND = n
 CONFIG_HW_PWRP_DETECTION = n
-CONFIG_BT_COEXIST = y
+CONFIG_BT_COEXIST = n
 CONFIG_WAPI_SUPPORT = n
 CONFIG_EFUSE_CONFIG_FILE = y
 CONFIG_EXT_CLK = n
@@ -132,7 +132,7 @@ CONFIG_MP_VHT_HW_TX_MODE = n
 #################### Alibaba Zeroconfig #######################
 CONFIG_ALIBABA_ZEROCONFIG = n
 ###################### Platform Related #######################
-CONFIG_PLATFORM_I386_PC = y
+CONFIG_PLATFORM_I386_PC = n
 CONFIG_PLATFORM_ANDROID_X86 = n
 CONFIG_PLATFORM_ANDROID_INTEL_X86 = n
 CONFIG_PLATFORM_JB_X86 = n
@@ -141,7 +141,7 @@ CONFIG_PLATFORM_ARM_PXA2XX = n
 CONFIG_PLATFORM_ARM_S3C6K4 = n
 CONFIG_PLATFORM_MIPS_RMI = n
 CONFIG_PLATFORM_RTD2880B = n
-CONFIG_PLATFORM_MIPS_AR9132 = n
+CONFIG_PLATFORM_MIPS_AR9132 = y
 CONFIG_PLATFORM_RTK_DMP = n
 CONFIG_PLATFORM_MIPS_PLM = n
 CONFIG_PLATFORM_MSTAR389 = n
@@ -1529,10 +1529,17 @@ KSRC:= /home/mstar/mstar_linux/2.6.28.9/
 endif
 
 ifeq ($(CONFIG_PLATFORM_MIPS_AR9132), y)
-EXTRA_CFLAGS += -DCONFIG_BIG_ENDIAN
-ARCH := mips
-CROSS_COMPILE := mips-openwrt-linux-
-KSRC := /home/alex/test_openwrt/tmp/linux-2.6.30.9
+ifdef EXT_EXTRA_CFLAGS
+EXTRA_CFLAGS += $(EXT_EXTRA_CFLAGS)
+else
+EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
+#EXTRA_CFLAGS += -DCONFIG_CONCURRENT_MODE
+EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
+#EXTRA_CFLAGS += -DCONFIG_P2P_IPS
+endif
+#ARCH := mips
+#CROSS_COMPILE := mips-openwrt-linux-
+#KSRC := /home/alex/test_openwrt/tmp/linux-2.6.30.9
 endif
 
 ifeq ($(CONFIG_PLATFORM_DMP_PHILIPS), y)
@@ -2290,6 +2297,9 @@ MODULE_NAME := $(USER_MODULE_NAME)
 endif
 
 ifneq ($(KERNELRELEASE),)
+KERNELRELEASE := $(shell uname -r)
+$(warning ~~~~~~~~~ $(KERNELRELEASE))
+endif
 
 ########### this part for *.mk ############################
 include $(src)/hal/phydm/phydm.mk
@@ -2390,15 +2400,20 @@ ifeq ($(CONFIG_RTL8723B), y)
 $(MODULE_NAME)-$(CONFIG_MP_INCLUDED)+= core/rtw_bt_mp.o
 endif
 
+ifneq ($(CONFIG_RTL8822CU),)
+$(warning aaaaaaaaaaaaaaaaaaaaa )
 obj-$(CONFIG_RTL8822CU) := $(MODULE_NAME).o
-
 else
+$(warning bbbbbbbbbbbbbbbbbbbb )
+$(warning $(MODULE_NAME))
+obj-m := $(MODULE_NAME).o
 
-export CONFIG_RTL8822CU = m
+#export CONFIG_RTL8822CU = m
 
 all: modules
 
 modules:
+	echo $(MODULE_NAME)
 	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KSRC) M=$(shell pwd)  modules
 
 strip:
